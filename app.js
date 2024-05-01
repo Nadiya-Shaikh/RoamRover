@@ -64,6 +64,22 @@ app.post('/listings', async(req,res)=>{
     res.redirect('/listings');
 });
 
+//update route
+app.put('/listing/:id',async(req,res)=>{
+    let {id} = req.params;
+    await Listing.findByIdAndUpdate(id, {...req.body.listing});
+    res.redirect(`listings/${id}`);
+});
+
+//edit route
+app.get('/listings/:id/edit', async(req,res)=>{
+    let {id} = req.params;
+    const listing = await Listing.findById(id);
+    res.render("listings/edit.ejs", {listing});
+});
+
+
+
 app.get('/', (req, res) => {
     res.send('Home');
 });
