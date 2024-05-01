@@ -5,6 +5,7 @@ const PORT = 8080;
 const MONGO_URL = "mongodb://127.0.0.1:27017/TheRoamRover";
 const Listing = require('./models/listing');
 const path = require('path');
+const methodOverride = require('method-override');
 
 main()
     .then(() => console.log('mongodb connected successfully!'))
@@ -34,6 +35,7 @@ async function main() {
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({extended: true}));
+app.use(methodOverride('_method'));
 
 //index route
 app.get('/listings', async (req, res) => {
@@ -64,21 +66,36 @@ app.post('/listings', async(req,res)=>{
     res.redirect('/listings');
 });
 
-//update route
-app.put('/listing/:id',async(req,res)=>{
-    let {id} = req.params;
-    await Listing.findByIdAndUpdate(id, {...req.body.listing});
-    res.redirect(`listings/${id}`);
+// Edit route
+app.get('/listings/:id/edit', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const listing = await Listing.findById(id);
+        res.render("listings/edit.ejs", { listing });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
-//edit route
-app.get('/listings/:id/edit', async(req,res)=>{
-    let {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/edit.ejs", {listing});
+// Update route
+app.put('/listings/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Listing.findByIdAndUpdate(id, req.body.listing);
+        res.redirect(`/listings/${id}`);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
-
+//delete route
+app.delete("/listings/:id",async (req,res)=>{
+    let {id} = req.params;
+    await Listing.findByIdAndDelete(id);
+    res.redirect("/listings");
+});
 
 app.get('/', (req, res) => {
     res.send('Home');
