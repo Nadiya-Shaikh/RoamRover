@@ -6,6 +6,7 @@ const MONGO_URL = "mongodb://127.0.0.1:27017/TheRoamRover";
 const Listing = require('./models/listing');
 const path = require('path');
 const methodOverride = require('method-override');
+const ejsMate = require('ejs-mate');
 
 main()
     .then(() => console.log('mongodb connected successfully!'))
@@ -34,8 +35,11 @@ async function main() {
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
+app.engine('ejs', ejsMate);
+app.use(express.static(path.join(__dirname, '/public')));
+
 
 //index route
 app.get('/listings', async (req, res) => {
@@ -48,19 +52,19 @@ app.get('/listings', async (req, res) => {
 });
 
 //new route
-app.get('/listings/new', async(req,res)=>{
+app.get('/listings/new', async (req, res) => {
     res.render("listings/new.ejs");
 });
 
 //show route
-app.get('/listings/:id', async(req,res)=>{
-    let {id} = req.params;
-   const listing = await Listing.findById(id);
-   res.render("listings/show", {listing});
+app.get('/listings/:id', async (req, res) => {
+    let { id } = req.params;
+    const listing = await Listing.findById(id);
+    res.render("listings/show", { listing });
 })
 
 //create route
-app.post('/listings', async(req,res)=>{
+app.post('/listings', async (req, res) => {
     const newListing = new Listing(req.body.listing);
     await newListing.save();
     res.redirect('/listings');
@@ -91,8 +95,8 @@ app.put('/listings/:id', async (req, res) => {
 });
 
 //delete route
-app.delete("/listings/:id",async (req,res)=>{
-    let {id} = req.params;
+app.delete("/listings/:id", async (req, res) => {
+    let { id } = req.params;
     await Listing.findByIdAndDelete(id);
     res.redirect("/listings");
 });

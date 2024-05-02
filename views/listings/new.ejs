@@ -1,13 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
+<% layout('../layouts/boilerplate') -%>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-
-<body>
     <form action="/listings" method="post">
         Title: <input name="listing[title]" type="text" placeholder="Enter title">
         <br><br>
@@ -21,8 +13,6 @@
         <br><br>
         location: <input name="listing[location]" type="text" placeholder="Enter location">
         <br><br>
-        <button type="submit">Add</button>
+        <button type="submit">Add</button><br> <br>
+        <a href="/listings">Back</a>
     </form>
-</body>
-
-</html>
