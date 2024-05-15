@@ -11,8 +11,8 @@ body {
     color: #222222 !important;
 }
 
-.fa-solid {
-    color: #FF385C
+.fa-house-chimney-crack {
+    color: #FF385C;
 }
 
 .nav-item {
@@ -50,4 +50,42 @@ body {
 .delete-btn {
     background-color: rgb(255, 56, 92) !important;
     color: white !important;
+}
+
+/* footer */
+/* footer */
+
+.f-info-links a {
+    text-decoration: none;
+}
+
+.f-info-links a:hover {
+    text-decoration: underline;
+}
+
+.f-info-socials i {
+    font-size: 1.2rem;
+    margin-right: 1rem;
+}
+
+
+.f-info-links,
+.f-info-socials,
+.f-info-brand {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.f-info {
+    text-align: center;
+    background-color: #cccccc;
+    height: 8rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: space-evenly;
+
 }

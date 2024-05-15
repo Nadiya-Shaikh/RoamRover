@@ -1,36 +1,60 @@
+
+if (process.env.NODE_ENV != "production") {
+    require('dotenv').config();
+};
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
-const PORT = 8080;
-const MONGO_URL = "mongodb://127.0.0.1:27017/TheRoamRover";
-const Listing = require('./models/listing');
+const PORT = 8000;
 const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
+const ExpressError = require('./utils/expressErr');
+const listingRouter = require('./routes/listing.js');
+const reviewRouter = require('./routes/reviews.js');
+const userRouter = require('./routes/user.js');
+const session = require("express-session");
+const MongoStore = require('connect-mongo');
+
+const flash = require("connect-flash");
+const User = require('./models/user.js');
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+
+
+const dbUrl = process.env.ATLASDB_URL;
+
+const secret = process.env.SECRET;
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    crypto: {
+        secret,
+    },
+    touchAfter: 24 * 3600,
+})
+store.on("error", () => {
+    console.log("ERROR in MONGO SESSION STORE", error);
+})
+const sessionOptions = {
+    store,
+    secret,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 7 * 24 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 1000
+    },
+
+}
 
 main()
     .then(() => console.log('mongodb connected successfully!'))
     .catch((err) => console.log("ERORR - ", err));
 
 async function main() {
-    await mongoose.connect(MONGO_URL);
+    await mongoose.connect(dbUrl);
 };
 
-// //check listing
-// app.get('/testListing', async (req, res) => {
-//     const sampleListing = new Listing({
-//         title: 'Villa',
-//         description: 'By the beach',
-//         image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZTJ9PiXYRPBIWO2maHbR9UZHFId3Jj0aDTYR6uXROOA&s',
-//         price: 2000,
-//         location: 'Calangute, Goa',
-//         country: 'India',
-//     });
-//     await sampleListing.save();
-//     res.send('testing successful')
-//     console.log('listing saved');
-
-// });
 
 
 app.set("view engine", "ejs");
@@ -39,71 +63,38 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, '/public')));
+app.use(session(sessionOptions));
+app.use(flash());
 
 
-//index route
-app.get('/listings', async (req, res) => {
-    try {
-        const allListings = await Listing.find({});
-        res.render("listings/index.ejs", { allListings });
-    } catch (err) {
-        console.log(err);
-    }
-});
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
-//new route
-app.get('/listings/new', async (req, res) => {
-    res.render("listings/new.ejs");
-});
 
-//show route
-app.get('/listings/:id', async (req, res) => {
-    let { id } = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/show", { listing });
+app.use((req, res, next) => {
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    res.locals.currUser = req.user;
+    next();
 })
+app.use("/listings", listingRouter);
+app.use("/listings/:id/reviews", reviewRouter);
+app.use("/", userRouter);
 
-//create route
-app.post('/listings', async (req, res) => {
-    const newListing = new Listing(req.body.listing);
-    await newListing.save();
-    res.redirect('/listings');
+
+
+app.all("*", (req, res, next) => {
+    next(new ExpressError(404, "PAGE NOT FOUND!"));
+});
+app.use((err, req, res, next) => {
+    let { statusCode = 302, message = "something went wrong!" } = err;
+    res.render('./listings/err.ejs', { message });
 });
 
-// Edit route
-app.get('/listings/:id/edit', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const listing = await Listing.findById(id);
-        res.render("listings/edit.ejs", { listing });
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(500).send("Internal Server Error");
-    }
-});
 
-// Update route
-app.put('/listings/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        await Listing.findByIdAndUpdate(id, req.body.listing);
-        res.redirect(`/listings/${id}`);
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-//delete route
-app.delete("/listings/:id", async (req, res) => {
-    let { id } = req.params;
-    await Listing.findByIdAndDelete(id);
-    res.redirect("/listings");
-});
-
-app.get('/', (req, res) => {
-    res.send('Home');
-});
 app.listen(PORT, () => {
     console.log('server is listening to port: 8080');
 });
